@@ -27,10 +27,24 @@ class Entity(object):
     def __init__(self, name=''):
         self.env = None  # Environment
         self._id = Entity._gen_entity_id()
+        self.protect_props = []
         self.name = name
         self.step_handlers = []  # List
         self.step_events = []  # List
         self.access_handlers = []  # List
+
+    def __deepcopy__(self, memodict={}):
+        """ 对象深拷贝.
+
+        为保证性能，采用策略：整体浅拷贝，保护值深拷贝.
+        通过指定 protect 属性，确认需要默认深拷贝的属性.
+        """
+        obj = copy.copy(self)
+        for name in self.protect_props:
+            if hasattr(self, name):
+                v = copy.deepcopy(getattr(self, name))
+                setattr(obj, name, v)
+        return obj
 
     @property
     def id(self) -> int:
@@ -83,15 +97,6 @@ class Environment(object):
         self._entities = []  # List[Entity]
         self._clock = _SimClock()
         self.step_events = []
-
-    def __deepcopy__(self, memodict={}):
-        """ 对象深拷贝.
-
-        为保证性能，采用策略：整体浅拷贝，保护值深拷贝.
-        通过指定 protect 属性，确认需要默认深拷贝的属性.
-        """
-        obj = copy.copy(self)
-        return obj
 
     def run(self, **kwargs):
         """ 连续运行. """

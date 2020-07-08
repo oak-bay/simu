@@ -7,14 +7,7 @@ from simu import Environment, Entity
 from simu import vec
 import numpy as np
 
-K = 9.8
-
-
-def gravaity_rule(obj, other):
-    """ 万有引力定律. """
-    v = vec.unit(obj.pos - other.pos)
-    a = K * other.M * (vec.dist(obj.pos, other.pos) ** 2)
-    obj.F = obj.F + a * v
+K = 9.8  #
 
 
 class Body(Entity):
@@ -22,6 +15,7 @@ class Body(Entity):
 
     def __init__(self, name=''):
         super().__init__(name)
+        self.protect_props.append('pos')
         self.pos = np.zeros(2)
         self.vel = np.zeros(2)
         self.M = 1.
@@ -36,6 +30,14 @@ class Body(Entity):
         self._F = np.zeros(2)
 
 
+def gravaity_rule(obj: Body, other: Body):
+    """ 万有引力定律. """
+    v = vec.unit(other.pos - obj.pos)
+    f = K * other.M / (vec.dist(obj.pos, other.pos) ** 2)
+    obj._F += f * v
+    pass
+
+
 class Recorder:
     def __init__(self):
         self.pos1 = []
@@ -44,22 +46,35 @@ class Recorder:
     def __call__(self, env):
         sat = env.find('sat')
         if sat:
-            self.pos1.append(sat.pos)
+            self.pos1.append(sat.pos.copy())
 
         earth = env.find('earth')
         if earth:
-            self.pos2.append(earth.pos)
+            self.pos2.append(earth.pos.copy())
+
+    def plot(self):
+        import matplotlib.pyplot as plt
+        xy = np.array(self.pos1).T
+        plt.plot(xy[0,:], xy[1,:], 'g')
+
+        xy = np.array(self.pos2).T
+        plt.plot(xy[0,:], xy[1,:], 'r')
+        plt.show()
 
 
-if __name__ == '__main__':
-    env = Environment()
-    env.step_events.append(Recorder())
+class BodyTest(unittest.TestCase):
+    def test_earth_and_sat(self):
+        env = Environment()
+        recorder = Recorder()
+        env.step_events.append(recorder)
 
-    sat = env.add(Body('sat'))
-    sat.pos = np.array([0, 1000], dtype=np.float)
-    sat.vel = np.array([10, 0], dtype=np.float)
+        sat = env.add(Body('sat'))
+        sat.pos = np.array([0, 1000], dtype=np.float)
+        sat.vel = np.array([20, 0], dtype=np.float)
 
-    earth = env.add(Body('earth'))
-    earth.M = 1e6
+        earth = env.add(Body('earth'))
+        earth.M = 1e3
 
-    env.run(step=1.0, duration=300)
+        env.run(step=1.0, duration=3000)
+        self.assertTrue(len(recorder.pos1) == len(recorder.pos2) > 0)
+        recorder.plot()
