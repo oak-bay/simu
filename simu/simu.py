@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Tuple
 
 
 class Entity(object):
@@ -24,6 +24,12 @@ class Entity(object):
     def attach(self, env):
         self._env = env
 
+    def reset(self):
+        pass
+
+    def step(self, time_info):
+        pass
+
 
 class Environment(object):
     """ 仿真环境.
@@ -34,14 +40,13 @@ class Environment(object):
 
     def __init__(self):
         self._entities = []  # List[Entity]
-        self._clock = None
+        self._clock = _SimClock()
 
     def run(self):
         """ 连续运行. """
         self.reset()
-        while not self._clock.is_over():
-            time_info = self._clock.step()
-            self.step(time_info)
+        while not self.is_over():
+            self.step()
 
     def reset(self):
         """ 重置. """
@@ -49,10 +54,15 @@ class Environment(object):
         for obj in self._entities:
             obj.reset()
 
-    def step(self, time_info):
+    def step(self):
         """ 步进. """
+        time_info = self._clock.step()
         for obj in self._entities:
             obj.step(time_info)
+
+    def is_over(self) -> bool:
+        """ 判断是否结束. """
+        return self._clock.is_over()
 
     @property
     def entities(self):
@@ -93,6 +103,10 @@ class Environment(object):
                 return obj
         return None
 
+    @property
+    def time_info(self):
+        return self._clock.time_info
+
     def _compare_obj_tag(self, obj, obj_tag) -> bool:
         """ 检查对象和标签是否相符 """
         if isinstance(obj_tag, Entity):
@@ -102,3 +116,36 @@ class Environment(object):
         if isinstance(obj_tag, str) and obj_tag != '':
             return obj.name == obj_tag
         return False
+
+
+class _SimClock(object):
+    """ 仿真时钟. """
+
+    def __init__(self):
+        """ 初始化时钟.
+
+        TODO: 增加可选择初始化内容.
+        """
+        self._step = 0.1
+        self.range = [0., 10.]
+
+        self._now = 0.
+        self.reset()
+
+    def reset(self):
+        """ 重置. """
+        self._now = self.range[0]
+
+    def step(self) -> Tuple[float, float]:
+        """ 步进. """
+        self._now += self._step
+        return self.time_info
+
+    def is_over(self) -> bool:
+        """ 判断时钟是否结束. """
+        return self._now >= self.range[1]
+
+    @property
+    def time_info(self) -> Tuple[float, float]:
+        """ 当前时钟信息. """
+        return self._now, self._step
