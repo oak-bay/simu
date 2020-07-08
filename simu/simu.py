@@ -27,6 +27,7 @@ class Entity(object):
         self._id = Entity._gen_entity_id()
         self.name = name
         self.step_handlers = []  # List
+        self.step_events = []  # List
         self.access_handlers = []  # List
 
     @property
@@ -46,6 +47,11 @@ class Entity(object):
         """ 步进. """
         for handler in self.step_handlers:
             handler(self, time_info)
+
+    def on_step(self):
+        """ 处理步进消息. """
+        for evt in self.step_events:
+            evt(self)
 
     def access(self, others: List):
         """ 与其他实体交互. """
@@ -67,14 +73,23 @@ class Environment(object):
         reset, run, step
 
     Attributes:
-        step_handlers: 步进处理函数列表.
-            步进处理函数原型 step_handler(env, time_info)
+        step_evnets: 步进处理函数列表.
+            步进处理函数原型 step_event(env)
     """
 
     def __init__(self):
         self._entities = []  # List[Entity]
         self._clock = _SimClock()
-        self.step_handlers = []
+        self.step_events = []
+
+    def __deepcopy__(self, memodict={}):
+        """ 对象深拷贝.
+
+        为保证性能，采用策略：整体浅拷贝，保护值深拷贝.
+        通过指定 protect 属性，确认需要默认深拷贝的属性.
+        """
+        obj = copy.copy(self)
+        return obj
 
     def run(self, **kwargs):
         """ 连续运行. """
@@ -84,7 +99,8 @@ class Environment(object):
 
     def reset(self, **kwargs):
         """ 重置. """
-        self._clock.reset(**kwargs)
+        self._clock.set_values(**kwargs)
+        self._clock.reset()
         for obj in self._entities:
             obj.reset()
 
@@ -104,8 +120,8 @@ class Environment(object):
             obj.step(time_info)
 
         # 处理步进事件.
-        for handler in self.step_handlers:
-            handler(self, self.time_info)
+        for evt in self.step_events:
+            evt(self)
 
         self._clock.step()
 
@@ -201,9 +217,8 @@ class _SimClock(object):
         if 'realtime' in kwargs:
             self.realtime = bool(kwargs['realtime'])
 
-    def reset(self, **kwargs):
+    def reset(self):
         """ 重置. """
-        self.set_values(**kwargs)
         self._now = self._range[0]
         self._prev_t = None
 
