@@ -39,3 +39,25 @@ class SimuTestCase(unittest.TestCase):
 
         env.remove(obj2.id)
         self.assertTrue(len(env.entities) == 2)
+
+    def test_run(self):
+        """ 测试场景运行. """
+        env = Environment()
+        env.add(Entity())
+
+        # 测试连续运行.
+        env.reset()
+        self.assertAlmostEqual(env.time_info[0], 0.)
+        env.run()
+        self.assertAlmostEqual(env.time_info[0], 10.1, 3)
+        self.assertTrue(env.is_over())
+
+        # 测试单步运行.
+        env.reset()
+        self.assertAlmostEqual(env.time_info[0], 0.)
+        env.step()
+        self.assertAlmostEqual(env.time_info[0], 0.1)
+        self.assertFalse(env.is_over())
+        env.step()
+        self.assertAlmostEqual(env.time_info[0], 0.2)
+        self.assertFalse(env.is_over())
