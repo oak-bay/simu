@@ -7,7 +7,9 @@ class Entity(object):
     """ 仿真实体.
 
     Attributes:
+        id: ID.
         name: 名字[可选].
+        env: 实体所绑定的环境.
         step_handlers: 步进处理函数列表.
             步进处理函数原型 step_handler(obj, time_info)
         access_handlers: 互操作处理函数列表.
@@ -23,7 +25,7 @@ class Entity(object):
         return Entity._GlobalId
 
     def __init__(self, name=''):
-        self._env = None  # Environment
+        self.env = None  # Environment
         self._id = Entity._gen_entity_id()
         self.name = name
         self.step_handlers = []  # List
@@ -37,7 +39,7 @@ class Entity(object):
 
     def attach(self, env):
         """ 绑定运行环境. """
-        self._env = env
+        self.env = env
 
     def reset(self):
         """ 重置实体. """
@@ -104,7 +106,7 @@ class Environment(object):
         for obj in self._entities:
             obj.reset()
 
-    def step(self):
+    def step(self) -> bool:
         """ 步进. """
         time_info = self.time_info
         active_entities = [obj for obj in self._entities if obj.is_active()]
@@ -124,6 +126,7 @@ class Environment(object):
             evt(self)
 
         self._clock.step()
+        return self.is_over()
 
     def is_over(self) -> bool:
         """ 判断是否结束. """
@@ -248,5 +251,9 @@ class _SimClock(object):
 
     @property
     def time_info(self) -> Tuple[float, float]:
-        """ 当前时钟信息. """
-        return self._now, self._step
+        """ 当前时钟信息. 
+
+        :return: Tuple[ 当前时刻，步进时间（从上一步到当前时刻）]
+                当前时刻等于起始时，步进时间为 0；其他时间的步进为仿真步长.
+        """
+        return (self._now, self._step) if self._now > self._range[0] else (self._now, 0.)
