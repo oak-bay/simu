@@ -1,4 +1,5 @@
 from typing import List, Tuple
+import time
 
 
 class Entity(object):
@@ -42,15 +43,15 @@ class Environment(object):
         self._entities = []  # List[Entity]
         self._clock = _SimClock()
 
-    def run(self):
+    def run(self, **kwargs):
         """ 连续运行. """
-        self.reset()
+        self.reset(**kwargs)
         while not self.is_over():
             self.step()
 
-    def reset(self):
+    def reset(self, **kwargs):
         """ 重置. """
-        self._clock.reset()
+        self._clock.reset(**kwargs)
         for obj in self._entities:
             obj.reset()
 
@@ -119,31 +120,67 @@ class Environment(object):
 
 
 class _SimClock(object):
-    """ 仿真时钟. """
+    """ 仿真时钟. 
+    
+    TODO: 考虑运行时间的设置.
+    """
 
-    def __init__(self):
+    def __init__(self, start=0., duration=10., step=0.1, realtime=False):
         """ 初始化时钟.
 
-        TODO: 增加可选择初始化内容.
+        :param step: 仿真步长.
+        :param start: 仿真起始时间.
+        :param duration: 仿真持续时长.
+        :param realtime: 是否实时仿真.
         """
-        self._step = 0.1
-        self.range = [0., 10.]
-
+        self._step = step
+        self._range = [start, start + duration]
         self._now = 0.
+
+        self.realtime = realtime
+        self._prev_t = None
+
         self.reset()
 
-    def reset(self):
+    def set_values(self, **kwargs):
+        """ 设置参数值. """
+        if 'step' in kwargs:
+            self._step = float(kwargs['step'])
+        if 'start' in kwargs:
+            self._range[0] = float(kwargs['start'])
+        if 'duration' in kwargs:
+            self._range[1] = self._range[0] + float(kwargs['duration'])
+        if 'realtime' in kwargs:
+            self.realtime = bool(kwargs['realtime'])
+
+    def reset(self, **kwargs):
         """ 重置. """
-        self._now = self.range[0]
+        self.set_values(**kwargs)
+        self._now = self._range[0]
+        self._prev_t = None
 
     def step(self) -> Tuple[float, float]:
         """ 步进. """
         self._now += self._step
+        self.wait_for_realtime()
         return self.time_info
+
+    def wait_for_realtime(self):
+        """ 同步. """
+        if self.realtime:
+            if self._prev_t is None:
+                self._prev_t = time.time()
+            else:
+                real_t = time.time() - self._prev_t
+                # dt = self._step - real_t
+                dt = (self._now - self._range[0]) - real_t
+                if dt > 0.:
+                    time.sleep(dt)
+                # self._prev_t = time.time()
 
     def is_over(self) -> bool:
         """ 判断时钟是否结束. """
-        return self._now >= self.range[1]
+        return self._now >= self._range[1]
 
     @property
     def time_info(self) -> Tuple[float, float]:

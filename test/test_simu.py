@@ -1,4 +1,5 @@
 import unittest
+import time
 from simu import Environment, Entity
 
 
@@ -61,3 +62,14 @@ class SimuTestCase(unittest.TestCase):
         env.step()
         self.assertAlmostEqual(env.time_info[0], 0.2)
         self.assertFalse(env.is_over())
+
+    def test_run_realtime(self):
+        """ 测试场景运行. """
+        env = Environment()
+        env.add(Entity())
+
+        t = time.time()
+        env.run(realtime=True)
+        self.assertTrue((time.time() - t) > 9.)
+        self.assertAlmostEqual(env.time_info[0], 10.1, 3)
+        self.assertTrue(env.is_over())
