@@ -50,7 +50,7 @@ class SimuTestCase(unittest.TestCase):
         env.reset()
         self.assertAlmostEqual(env.time_info[0], 0.)
         env.run()
-        self.assertAlmostEqual(env.time_info[0], 10.1, 3)
+        self.assertAlmostEqual(env.time_info[0], 10., 3)
         self.assertTrue(env.is_over())
 
         # 测试单步运行.
@@ -69,7 +69,30 @@ class SimuTestCase(unittest.TestCase):
         env.add(Entity())
 
         t = time.time()
-        env.run(realtime=True)
-        self.assertTrue((time.time() - t) > 9.)
-        self.assertAlmostEqual(env.time_info[0], 10.1, 3)
+        env.run(realtime=True, duration=5)
+        self.assertTrue((time.time() - t) > 5.)
+        self.assertAlmostEqual(env.time_info[0], 5., 3)
         self.assertTrue(env.is_over())
+
+    def test_run_access(self):
+        """ 测试互操作等. """
+        class StepCounter:
+            def __init__(self):
+                self.counter = 0
+
+            def __call__(self, obj, ti):
+                self.counter += 1
+
+        env = Environment()
+
+        obj1 = env.add(Entity())
+        counter1 = StepCounter()
+        obj1.step_handlers.append(counter1)
+
+        obj2 = env.add(Entity())
+        counter2 = StepCounter()
+        obj2.step_handlers.append(counter2)
+
+        env.run()
+        self.assertTrue(True)
+        self.assertTrue(counter1.counter == counter2.counter == 100)

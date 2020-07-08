@@ -1,47 +1,80 @@
 from typing import List, Tuple
 import time
+import copy
 
 
 class Entity(object):
     """ 仿真实体.
+
+    Attributes:
+        name: 名字[可选].
+        step_handlers: 步进处理函数列表.
+            步进处理函数原型 step_handler(obj, time_info)
+        access_handlers: 互操作处理函数列表.
+            互操作处理函数原型 access_handler(obj, other)
     """
 
     _GlobalId: int = 0  # 全局 ID 计数器.
 
     @classmethod
     def _gen_entity_id(cls) -> int:
+        """ 生成实体 ID. """
         Entity._GlobalId += 1
         return Entity._GlobalId
 
-    def __init__(self):
+    def __init__(self, name=''):
         self._env = None  # Environment
         self._id = Entity._gen_entity_id()
-        self.name = ''
+        self.name = name
+        self.step_handlers = []  # List
+        self.access_handlers = []  # List
 
     @property
     def id(self) -> int:
+        """ 实体 ID. """
         return self._id
 
     def attach(self, env):
+        """ 绑定运行环境. """
         self._env = env
 
     def reset(self):
+        """ 重置实体. """
         pass
 
     def step(self, time_info):
-        pass
+        """ 步进. """
+        for handler in self.step_handlers:
+            handler(self, time_info)
+
+    def access(self, others: List):
+        """ 与其他实体交互. """
+        for other in others:
+            for handler in self.access_handlers:
+                handler(self, other)
+
+    def is_active(self) -> bool:
+        """ 是否处于活动状态（是否参与仿真）"""
+        return True
 
 
 class Environment(object):
     """ 仿真环境.
 
     1.实体管理功能.
+        add, remove, find
     2.仿真管理功能. 
+        reset, run, step
+
+    Attributes:
+        step_handlers: 步进处理函数列表.
+            步进处理函数原型 step_handler(env, time_info)
     """
 
     def __init__(self):
         self._entities = []  # List[Entity]
         self._clock = _SimClock()
+        self.step_handlers = []
 
     def run(self, **kwargs):
         """ 连续运行. """
@@ -57,9 +90,24 @@ class Environment(object):
 
     def step(self):
         """ 步进. """
-        time_info = self._clock.step()
-        for obj in self._entities:
+        time_info = self.time_info
+        active_entities = [obj for obj in self._entities if obj.is_active()]
+
+        # 互操作.
+        mirror_entities = copy.deepcopy(active_entities)
+        for obj in mirror_entities:
+            others = [other for other in mirror_entities if other is not obj]
+            obj.access(others)
+
+        # 状态步进.
+        for obj in active_entities:
             obj.step(time_info)
+
+        # 处理步进事件.
+        for handler in self.step_handlers:
+            handler(self, self.time_info)
+
+        self._clock.step()
 
     def is_over(self) -> bool:
         """ 判断是否结束. """
@@ -180,7 +228,8 @@ class _SimClock(object):
 
     def is_over(self) -> bool:
         """ 判断时钟是否结束. """
-        return self._now >= self._range[1]
+        end = self._range[1]
+        return (self._now >= end) or (abs(self._now - end) < 0.01 * self._step)
 
     @property
     def time_info(self) -> Tuple[float, float]:
