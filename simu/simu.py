@@ -118,8 +118,8 @@ class Environment(object):
 
         # 互操作.
         mirror_entities = copy.deepcopy(active_entities)
-        for obj in mirror_entities:
-            others = [other for other in mirror_entities if other is not obj]
+        for obj in active_entities:
+            others = [other for other in mirror_entities if other.id != obj.id]
             obj.access(others)
 
         # 状态步进.
