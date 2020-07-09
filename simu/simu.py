@@ -133,9 +133,12 @@ class Environment(object):
             obj.step(time_info)
 
         # 处理步进事件.
+        for obj in active_entities:
+            obj.on_step()
         for evt in self.step_events:
             evt(self)
 
+        # 时钟步进.
         self._clock.step()
         return self.is_over()
 
