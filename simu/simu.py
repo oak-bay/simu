@@ -14,6 +14,7 @@ class Entity(object):
             步进处理函数原型 step_handler(obj, time_info)
         access_handlers: 互操作处理函数列表.
             互操作处理函数原型 access_handler(obj, other)
+        protect_props: 需要保护的属性名称列表.
     """
 
     _GlobalId: int = 0  # 全局 ID 计数器.
@@ -27,8 +28,9 @@ class Entity(object):
     def __init__(self, name=''):
         self.env = None  # Environment
         self._id = Entity._gen_entity_id()
-        self.protect_props = []
-        self.name = name
+        self._active = True  # bool
+        self.protect_props = []  # List[str]
+        self.name = name  # str
         self.step_handlers = []  # List
         self.step_events = []  # List
         self.access_handlers = []  # List
@@ -37,7 +39,7 @@ class Entity(object):
         """ 对象深拷贝.
 
         为保证性能，采用策略：整体浅拷贝，保护值深拷贝.
-        通过指定 protect 属性，确认需要默认深拷贝的属性.
+        通过指定 protect_props 属性，确认需要默认深拷贝的属性.
         """
         obj = copy.copy(self)
         for name in self.protect_props:
@@ -77,7 +79,11 @@ class Entity(object):
 
     def is_active(self) -> bool:
         """ 是否处于活动状态（是否参与仿真）"""
-        return True
+        return self._active
+
+    def set_active(self, active):
+        """ 设置活动状态（可以控制实体退出仿真）"""
+        self._active = active
 
 
 class Environment(object):
