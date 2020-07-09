@@ -33,7 +33,6 @@ def gravaity_rule(obj: Body, other: Body):
     v = vec.unit(other.pos - obj.pos)
     f = G * other.m / (vec.dist(obj.pos, other.pos) ** 2)
     obj._f += f * v
-    pass
 
 
 def chase_rule(obj: Body, other: Body):
@@ -41,7 +40,6 @@ def chase_rule(obj: Body, other: Body):
     d = 1.5  # vec.dist(obj.vel)
     v = vec.unit(other.pos - obj.pos)
     obj.vel = d * v
-    pass
 
 
 class Recorder:
@@ -60,8 +58,9 @@ class Recorder:
     def plot(self):
         import matplotlib.pyplot as plt
         for _, pos in self.records.items():
-            xy = np.array(pos).T
+            xy = np.copy(np.array(pos).T)
             plt.plot(xy[0, :], xy[1, :])
+        plt.axis('equal')
         plt.show()
 
 
