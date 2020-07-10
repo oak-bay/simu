@@ -4,6 +4,7 @@
 
 import unittest
 import numpy as np
+import matplotlib.pyplot as plt
 from simu import Environment
 from simu.common import MoveEntity
 from simu import vec
@@ -11,6 +12,13 @@ from simu import vec
 
 def print_position(bird):
     print('{:.2f} : {}  - {}'.format(bird.env.time_info[0], vec.to_str(bird.position), bird.track.is_over()))
+
+
+def plot_records(records: list):
+    """ 绘制数据. """
+    if records:
+        pt = records[-1]
+        plt.plot(pt[0], pt[1], 'r*')
 
 
 class MoveTest(unittest.TestCase):
@@ -26,5 +34,25 @@ class MoveTest(unittest.TestCase):
         np.testing.assert_almost_equal(bird.position, bird.track.start)
 
         env.run(duration=5)
+        np.testing.assert_almost_equal(bird.position, bird.track.end)
+        self.assertTrue(True)
+
+    def test_move_and_plot(self):
+        """ 测试 MoveEntity 和绘制. """
+        env = Environment()
+        bird = env.add(MoveEntity(name='bird', speed=5, waypoints=[[1, 1], [10, 10]]))
+
+        plt.xlim((0, 20))
+        plt.ylim((0, 20))
+        records = []
+        env.reset()
+        while not env.is_over():
+            env.step()
+            records.append(bird.position)
+            plot_records(records)
+            plt.pause(0.1)
+        plt.show()
+        plt.close()
+
         np.testing.assert_almost_equal(bird.position, bird.track.end)
         self.assertTrue(True)
