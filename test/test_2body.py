@@ -3,9 +3,10 @@
 """
 
 import unittest
+import matplotlib.pyplot as plt
+import numpy as np
 from simu import Environment, Entity
 from simu import vec
-import numpy as np
 
 
 class Body(Entity):
@@ -55,13 +56,14 @@ class Recorder:
                     self.records[obj.id] = []
                 self.records[obj.id].append(obj.pos.copy())
 
-    def plot(self):
-        import matplotlib.pyplot as plt
+    def plot(self, delay=1):
+        plt.figure()
         for _, pos in self.records.items():
             xy = np.copy(np.array(pos).T)
             plt.plot(xy[0, :], xy[1, :])
         plt.axis('equal')
-        plt.show()
+        plt.pause(delay)
+        plt.close()
 
 
 class BodyTest(unittest.TestCase):
