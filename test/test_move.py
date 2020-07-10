@@ -4,7 +4,8 @@
 
 import unittest
 import numpy as np
-from simu import Environment, MoveEntity
+from simu import Environment
+from simu.common import MoveEntity
 from simu import vec
 
 
