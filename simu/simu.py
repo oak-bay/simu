@@ -85,6 +85,10 @@ class Entity(object):
         """ 设置活动状态（可以控制实体退出仿真）"""
         self._active = active
 
+    @property
+    def time_info(self):
+        return self.env.time_info if self.env else None
+
 
 class Environment(object):
     """ 仿真环境.

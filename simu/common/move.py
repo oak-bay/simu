@@ -3,8 +3,10 @@ import numpy as np
 from simu import Entity
 from simu import vec
 
+
 class Track(object):
     """ 航线. """
+
     def __init__(self, dim=2, **kwargs):
         self.dim = max(int(dim), 2)
         self.waypoints = []
@@ -75,6 +77,7 @@ class MoveEntity(Entity):
         self.position = np.zeros(2)
         self.velocity = np.zeros_like(self.position)
         self.speed = 1.0
+        self.auto_active = True
         self.step_handlers.append(MoveEntity.move)
         # 进行相应初始化.
         self.set_values(**kwargs)
@@ -96,6 +99,10 @@ class MoveEntity(Entity):
         self.do_move(time_info)
         self.velocity = (self.position - prev_pos) / dt if dt > 0. \
             else np.zeros_like(self.position)
+        if self.auto_active and np.allclose(self.position, self.track.end):
+            self.set_active(False)
 
     def do_move(self, time_info):
-        self.position = self.track.move(self.position, self.speed * time_info[1])
+        """ 移动位置. """
+        self.position = self.track.move(
+            self.position, self.speed * time_info[1])

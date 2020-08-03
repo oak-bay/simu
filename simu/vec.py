@@ -1,5 +1,6 @@
 import numpy
 import math
+from typing import Optional
 
 
 def to_str(v, fmt='%.3f') -> str:
@@ -120,3 +121,16 @@ def xyz_to_aer(xyz, center, fmt='d') -> numpy.ndarray:
         return numpy.array([a, e, r], dtype=numpy.float)
     else:
         return numpy.array([0, 0, 0], dtype=numpy.float)
+
+
+def cart_to_pole(pos: numpy.ndarray, fmt='d') -> Optional[numpy.ndarray]:
+    """ 执教坐标转换为极坐标. """
+    assert(len(pos) == 2 or len(pos) == 3)
+    a = math.atan2(pos[0], pos[1])
+    r = dist(pos)
+    if len(pos) == 2:
+        return numpy.array([a, r], dtype=numpy.float)
+    if len(pos) == 3:
+        e = math.atan2(pos[2], dist(pos[0:2]))
+        return numpy.array([a, e, r], dtype=numpy.float)
+    return None
